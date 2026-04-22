@@ -1,0 +1,181 @@
+services:
+  # --- VPN GATEWAY ---
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    cap_add: [NET_ADMIN]
+    devices: [/dev/net/tun:/dev/net/tun]
+    environment:
+      - VPN_SERVICE_PROVIDER=${VPN_PROVIDER}
+      - OPENVPN_USER=${VPN_USER}
+      - OPENVPN_PASSWORD=${VPN_PASS}
+      - SERVER_COUNTRIES=${VPN_SERVER_COUNTRIES:-Canada}
+      - SERVER_CITIES=${VPN_SERVER_CITIES:-}
+    networks:
+      infra_network:
+        aliases:
+          - qbittorrent
+          - prowlarr
+    volumes:
+      - ./gluetun:/gluetun
+    restart: unless-stopped
+    healthcheck:
+      test: ping -c 1 www.google.com || exit 1
+      interval: 20s
+      timeout: 10s
+      retries: 5
+
+  # --- DOWNLOAD CLIENT (Behind VPN) ---
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    network_mode: "service:gluetun"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - WEBUI_PORT=8080
+    volumes:
+      - ./qbittorrent:/config
+      - /share/Media:/data
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.qbit.rule=Host(`torrent.${DOMAIN}`) || Host(`torrent.${TAIL_ID}.ts.net`)"
+      - "traefik.http.services.qbit.loadbalancer.server.port=8080"
+      - "tsdproxy.enable=true"
+      - "tsdproxy.name=torrent"
+      - "tsdproxy.target=traefik"
+      - "tsdproxy.container_port=80"
+
+  # --- INDEXER MANAGER (Behind VPN) ---
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    network_mode: "service:gluetun"
+    environment: { PUID: "${PUID}", PGID: "${PGID}", TZ: "${TZ}" }
+    volumes:
+      - ./prowlarr:/config
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prowlarr.rule=Host(`prowlarr.${DOMAIN}`) || Host(`prowlarr.${TAIL_ID}.ts.net`)"
+      - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
+      - "tsdproxy.enable=true"
+      - "tsdproxy.name=prowlarr"
+      - "tsdproxy.target=traefik"
+      - "tsdproxy.container_port=80"
+
+  # --- MOVIES & TV ---
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    networks: [infra_network]
+    environment: { PUID: "${PUID}", PGID: "${PGID}", TZ: "${TZ}" }
+    volumes: [./radarr:/config, /share/Media:/data]
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.radarr.rule=Host(`movies.${DOMAIN}`) || Host(`movies.${TAIL_ID}.ts.net`)"
+      - "traefik.http.services.radarr.loadbalancer.server.port=7878"
+      - "tsdproxy.enable=true"
+      - "tsdproxy.name=movies"
+      - "tsdproxy.target=traefik"
+      - "tsdproxy.container_port=80"
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    networks: [infra_network]
+    environment: { PUID: "${PUID}", PGID: "${PGID}", TZ: "${TZ}" }
+    volumes: [./sonarr:/config, /share/Media:/data]
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sonarr.rule=Host(`series.${DOMAIN}`) || Host(`series.${TAIL_ID}.ts.net`)"
+      - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
+      - "tsdproxy.enable=true"
+      - "tsdproxy.name=series"
+      - "tsdproxy.target=traefik"
+      - "tsdproxy.container_port=80"
+
+  # --- STREAMING (watch.osabosa.pl) ---
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    networks: [infra_network]
+    environment: { PUID: "${PUID}", PGID: "${PGID}", TZ: "${TZ}" }
+    volumes: [./jellyfin:/config, /share/Media:/data]
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jellyfin.rule=Host(`watch.${DOMAIN}`) || Host(`watch.${TAIL_ID}.ts.net`)"
+      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
+      - "tsdproxy.enable=true"
+      - "tsdproxy.name=watch"
+      - "tsdproxy.target=traefik"
+      - "tsdproxy.container_port=80"
+
+  # --- OTHERS ---
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    networks: [infra_network]
+    volumes: [./bazarr:/config, /share/Media:/data]
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.bazarr.rule=Host(`subs.${DOMAIN}`) || Host(`subs.${TAIL_ID}.ts.net`)"
+      - "traefik.http.services.bazarr.loadbalancer.server.port=6767"
+      - "tsdproxy.enable=true"
+      - "tsdproxy.name=subs"
+      - "tsdproxy.target=traefik"
+      - "tsdproxy.container_port=80"
+
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    networks: [infra_network]
+    volumes: [./jellyseerr:/app/config]
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jellyseerr.rule=Host(`requests.${DOMAIN}`) || Host(`requests.${TAIL_ID}.ts.net`)"
+      - "traefik.http.services.jellyseerr.loadbalancer.server.port=5055"
+      - "tsdproxy.enable=true"
+      - "tsdproxy.name=requests"
+      - "tsdproxy.target=traefik"
+      - "tsdproxy.container_port=80"
+
+  readarr:
+    image: binhex/arch-readarr
+    container_name: readarr
+    networks: [infra_network]
+    volumes: [./readarr:/config, /share/Media:/data]
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.readarr.rule=Host(`books.${DOMAIN}`) || Host(`books.${TAIL_ID}.ts.net`)"
+      - "traefik.http.services.readarr.loadbalancer.server.port=8787"
+      - "tsdproxy.enable=true"
+      - "tsdproxy.name=books"
+      - "tsdproxy.target=traefik"
+      - "tsdproxy.container_port=80"
+
+  flaresolverr:
+    image: flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    networks: [infra_network]
+    restart: unless-stopped
+
+  deunhealth:
+    image: qmcgaw/deunhealth
+    container_name: deunhealth
+    network_mode: "none"
+    environment: [LOG_LEVEL=info, HEALTH_SERVER_ADDRESS=127.0.0.1:9999]
+    volumes: [/var/run/docker.sock:/var/run/docker.sock]
+    restart: always
+
+networks:
+  infra_network:
+    external: true
