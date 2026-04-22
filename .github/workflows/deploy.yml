@@ -12,14 +12,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Prepare permanent directory
+        run: |
+          mkdir -p /stacks/access
+          mkdir -p /stacks/ops
+          mkdir -p /stacks/media
+
+      - name: Sync Access Stack files
+        run: |
+          cp -r access/* /stacks/access/
+
       - name: Create .env for Access Stack
         run: |
-          echo "CLOUDFLARE_TUNNEL_TOKEN=${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}" > access/.env
-          echo "DOMAIN=${{ secrets.DOMAIN }}" >> access/.env
-          echo "TSDPROXY_AUTHKEY=${{ secrets.TSDPROXY_AUTHKEY }}" >> access/.env
+          echo "CLOUDFLARE_TUNNEL_TOKEN=${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}" > /stacks/access/.env
+          echo "DOMAIN=${{ secrets.DOMAIN }}" >> /stacks/access/.env
+          echo "TSDPROXY_AUTHKEY=${{ secrets.TSDPROXY_AUTHKEY }}" >> /stacks/access/.env
 
       - name: Deploy Access Stack
         run: |
-          cd access
+          cd /stacks/access
           docker compose pull
           docker compose up -d --remove-orphans
