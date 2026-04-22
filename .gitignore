@@ -1,0 +1,7 @@
+**/.env
+.env
+
+#pliki tymczasowe QNAPa i systemowe
+.DS_Store
+Thumbs.db
+@eaDir/
