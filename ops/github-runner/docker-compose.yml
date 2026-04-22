@@ -1,0 +1,14 @@
+services:
+  github-runner:
+    image: myoung34/github-runner:latest
+    container_name: github-runner
+    restart: always
+    environment:
+      - ORG_NAME=beton-dysk
+      - ACCESS_TOKEN=${RUNNER_TOKEN}
+      - RUNNER_NAME=qnap-node
+      - RUNNER_SCOPE=org
+      - LABELS=qnap,self-hosted
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /share/Container/stacks:/stacks
