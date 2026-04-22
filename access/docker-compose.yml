@@ -39,6 +39,7 @@ services:
       - /share/Container/tsdproxy/data:/data
     environment:
       - TSDPROXY_AUTHKEY=${TSDPROXY_AUTHKEY}
+      - TSDPROXY_DEFAULT_TAGS=tag:server
     networks:
       - infra_network
 

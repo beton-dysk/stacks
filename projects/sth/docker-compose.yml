@@ -1,0 +1,21 @@
+services:
+  sth:
+    image: traefik/whoami:latest
+    container_name: sth
+    restart: unless-stopped
+    networks:
+      - infra_network
+    labels:
+      - "traefik.enable=true"    
+      - "traefik.http.routers.sth.rule=Host(`sth.${DOMAIN}`) || Host(`sth.${TAIL_ID}.ts.net`)"
+      - "traefik.http.routers.sth.entrypoints=web"
+      - "traefik.http.services.sth.loadbalancer.server.port=80"
+      
+      - "tsdproxy.enable=true"
+      - "tsdproxy.name=sth"
+      - "tsdproxy.target=traefik"
+      - "tsdproxy.container_port=80"
+
+networks:
+  infra_network:
+    external: true
