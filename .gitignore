@@ -1,6 +1,9 @@
 **/.env
 .env
 
+.ssh/
+.ssh/*
+
 #pliki tymczasowe QNAPa i systemowe
 .DS_Store
 Thumbs.db

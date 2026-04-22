@@ -14,9 +14,9 @@ jobs:
 
       - name: Prepare permanent directory
         run: |
-          mkdir -p /stacks/access
-          mkdir -p /stacks/ops
-          mkdir -p /stacks/media
+          mkdir -p /stacks/access /stacks/ops /stacks/media
+          chown -R 1000:100 /stacks/access /stacks/ops /stacks/media
+          chmod -R 777 /stacks/access /stacks/ops /stacks/media
 
       - name: Sync Access Stack files
         run: |
