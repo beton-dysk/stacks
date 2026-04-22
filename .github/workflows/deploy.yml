@@ -26,6 +26,7 @@ jobs:
         run: |
           echo "CLOUDFLARE_TUNNEL_TOKEN=${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}" > /stacks/access/.env
           echo "DOMAIN=${{ secrets.DOMAIN }}" >> /stacks/access/.env
+          echo "TAIL_ID=${{ secrets.TAIL_ID }}" >> /stacks/access/.env
           echo "TSDPROXY_AUTHKEY=${{ secrets.TSDPROXY_AUTHKEY }}" >> /stacks/access/.env
 
       - name: Deploy Access Stack
