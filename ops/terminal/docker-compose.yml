@@ -7,12 +7,12 @@ services:
     user: root
     networks:
       - infra_network
-    working_dir: /home/osabosa/stacks
+    working_dir: /share/Container/stacks
     environment:
       - ZSH_THEME=robbyrussell
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /share/Container/stacks:/home/osabosa/stacks
+      - /share/Container/stacks:/share/Container/stacks
       - ./config:/root
     command: ttyd -i 0.0.0.0 -p 7681 -W /usr/bin/zsh    
     labels:
