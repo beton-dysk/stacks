@@ -1,3 +1,4 @@
+ops/terminal/config/*
 media/*/
 !media/docker-compose.yml
 

@@ -1,0 +1,31 @@
+services:
+  terminal:
+    build: . 
+    container_name: terminal
+    hostname: terminal
+    restart: unless-stopped
+    user: root
+    networks:
+      - infra_network
+    working_dir: /home/osabosa/stacks
+    environment:
+      - ZSH_THEME=robbyrussell
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /share/Container/stacks:/home/osabosa/stacks
+      - ./config:/root
+    command: ttyd -i 0.0.0.0 -p 7681 -W /usr/bin/zsh    
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.terminal.rule=Host(`terminal.${DOMAIN}`) || Host(`terminal.${TAIL_ID}.ts.net`)"
+      - "traefik.http.routers.terminal.entrypoints=web"
+      - "traefik.http.services.terminal.loadbalancer.server.port=7681"
+      
+      - "tsdproxy.enable=true"
+      - "tsdproxy.name=terminal"
+      - "tsdproxy.target=traefik"
+      - "tsdproxy.container_port=80"
+
+networks:
+  infra_network:
+    external: true
